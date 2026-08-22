@@ -1,0 +1,21 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# .NET build output
+bin/
+obj/
+
+# Test results
+TestResults/
+
+# NuGet
+packages/
+
+# Local development settings
+appsettings.Development.json
+
+# OS files
+.DS_Store
+Thumbs.db
