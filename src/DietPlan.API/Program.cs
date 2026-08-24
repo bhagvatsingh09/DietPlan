@@ -21,9 +21,15 @@ builder.Services.AddScoped<MacroCalculator>();
 builder.Services.AddScoped<FoodService>();
 builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<MealFoodService>();
+builder.Services.AddScoped<ICalorieCalculationService, CalorieCalculator>();
 builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+app.UseSwaggerUI(options =>
+{
+    options.SwaggerEndpoint("/openapi/v1.json", "DietPlan API v1");
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -55,7 +61,7 @@ app.MapGet("/api/user-profiles/{id:guid}",
     });
 
 app.MapGet("/api/user-profiles/{id:guid}/calories",
-    (Guid id, DietPlanDbContext db, CalorieCalculator calculator) =>
+    (Guid id, DietPlanDbContext db, ICalorieCalculationService calculator) =>
     {
         var userProfile = db.UserProfiles.Find(id);
 
@@ -157,9 +163,24 @@ app.MapPost("/api/meals/{mealId:Guid}/foods",
         db.SaveChanges();
 
         return Results.Ok(mealFood);
-    }
+    });
+//app.MapGet("/api/user-profile/{id:Guid}/Calories",
+//    (Guid id, DietPlanDbContext Db, ICalorieCalculationService CalorieCalculator)=>
+//    {
+//        var userProfile = Db.UserProfiles.Find(id);
 
-    );
+//        if (userProfile == null)
+//        {
+//            return Results.NotFound(new
+//            {
+//                message = "user profile not found. "
+//            });
+//        }
+//        var result = CalorieCalculator.Calculate(userProfile);
+
+//        return Results.Ok(result);
+//    });
+
 
 app.Run();
 

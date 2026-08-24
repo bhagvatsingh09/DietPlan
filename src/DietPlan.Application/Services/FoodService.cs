@@ -1,10 +1,12 @@
 ﻿using DietPlan.Domain.Entities;
 using DietPlan.Application.DTOs;
-using System.Text;
+using DietPlan.Application.Interfaces;
+
 
 namespace DietPlan.Application.Services
 {
-    public class FoodService
+    public class FoodService 
+
     {
         public Food Create(CreateFoodRequest request)
         {

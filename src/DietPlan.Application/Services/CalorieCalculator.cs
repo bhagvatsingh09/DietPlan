@@ -1,10 +1,11 @@
 ﻿using DietPlan.Domain.Entities;
 using DietPlan.Domain.Enums;
 using DietPlan.Application.DTOs;
+using DietPlan.Application.Interfaces;
 
 namespace DietPlan.Application.Services;
 
-public class CalorieCalculator
+public class CalorieCalculator : ICalorieCalculationService
 {
     public CalorieCalculationResult Calculate(UserProfile userProfile)
     {
@@ -18,11 +19,20 @@ public class CalorieCalculator
         var dailyCalorieTarget =
             CalculateGoalCalories(tdee, userProfile.FitnessGoal);
 
+        var proteinGrams = CalculateProtein(userProfile);
+
+        var fatGrams = CalculateFat(dailyCalorieTarget);
+
+        var carbohydrateGrams = CalculateCarbohydrates(dailyCalorieTarget, proteinGrams, fatGrams);
+
         return new CalorieCalculationResult
         {
             Bmr = Math.Round(bmr),
             Tdee = Math.Round(tdee),
-            DailyCalorieTarget = Math.Round(dailyCalorieTarget)
+            DailyCalorieTarget = Math.Round(dailyCalorieTarget),
+            ProteinGrams = Math.Round(proteinGrams),
+            CarbohydrateGrams = Math.Round(carbohydrateGrams),
+            FatGrams = Math.Round(fatGrams)
         };
     }
 
@@ -62,10 +72,36 @@ public class CalorieCalculator
         return fitnessGoal switch
         {
             FitnessGoal.WeightLoss => tdee - 500,
-            FitnessGoal.weightGain => tdee + 300,
+            FitnessGoal.WeightGain => tdee + 300,
             FitnessGoal.MuscleGain => tdee + 250,
             FitnessGoal.Maintenance => tdee,
             _ => throw new ArgumentOutOfRangeException()
         };
+    }
+
+    private double CalculateProtein(UserProfile userProfile)
+    {
+        return userProfile.WeightKg * 2.0;
+    }
+
+    private double CalculateFat(double dailyCalories)
+    {
+        var fatCalories = dailyCalories * 0.25;
+
+        return fatCalories / 9;
+    }
+
+    private double CalculateCarbohydrates(
+    double dailyCalories,
+    double proteinGrams,
+    double fatGrams)
+    {
+        var proteinCalories = proteinGrams * 4;
+        var fatCalories = fatGrams * 9;
+
+        var remainingCalories =
+            dailyCalories - proteinCalories - fatCalories;
+
+        return remainingCalories / 4;
     }
 }

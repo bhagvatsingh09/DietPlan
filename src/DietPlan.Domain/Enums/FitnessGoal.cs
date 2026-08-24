@@ -7,7 +7,7 @@ namespace DietPlan.Domain.Enums;
 public enum FitnessGoal
 {
     WeightLoss,
-    weightGain,
+    WeightGain,
     MuscleGain,
     Maintenance
 

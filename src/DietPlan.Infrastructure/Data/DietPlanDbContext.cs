@@ -13,7 +13,8 @@ public class DietPlanDbContext : DbContext
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Food> Foods => Set<Food>();
     public DbSet<Meal> Meals => Set<Meal>();
-    public DbSet<MealFood> MealFoods=> Set<MealFood>();
+    public DbSet<MealFood> MealFoods => Set<MealFood>();
+   
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -30,6 +31,9 @@ public class DietPlanDbContext : DbContext
             .WithMany()
             .HasForeignKey(x => x.FoodId)
             .OnDelete(DeleteBehavior.Restrict);
+
+
+
     }
 
 }
