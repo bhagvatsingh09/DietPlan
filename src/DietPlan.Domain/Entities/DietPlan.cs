@@ -12,8 +12,8 @@ namespace DietPlan.Domain.Entities
         public double DailyCalories { get; private set; }
         public  double ProteinGrams { get; private set; }
         public double   CarbohydrateGrams { get; private set; }
-        public double FatGrams { get; private set; }    
-        public List<Meal> Meals { get; private set; }
+        public double FatGrams { get; private set; }
+        public List<Meal> Meals { get; private set; } = new();
         public DietPlan
             (
             Guid userProfileId,

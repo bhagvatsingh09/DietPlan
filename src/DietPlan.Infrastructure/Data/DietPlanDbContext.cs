@@ -1,6 +1,5 @@
 using DietPlan.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-
 namespace DietPlan.Infrastructure.Data;
 
 public class DietPlanDbContext : DbContext
@@ -14,7 +13,9 @@ public class DietPlanDbContext : DbContext
     public DbSet<Food> Foods => Set<Food>();
     public DbSet<Meal> Meals => Set<Meal>();
     public DbSet<MealFood> MealFoods => Set<MealFood>();
-   
+    public DbSet<DietPlan.Domain.Entities.DietPlan> DietPlans
+    => Set<DietPlan.Domain.Entities.DietPlan>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -32,6 +33,11 @@ public class DietPlanDbContext : DbContext
             .HasForeignKey(x => x.FoodId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<DietPlan.Domain.Entities.DietPlan>()
+            .HasOne<UserProfile>()
+            .WithMany()
+            .HasForeignKey(x => x.UserProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
 
 
     }

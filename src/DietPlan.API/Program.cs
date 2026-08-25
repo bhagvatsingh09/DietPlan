@@ -1,10 +1,12 @@
 
+using Microsoft.AspNetCore.Mvc;
 using DietPlan.Application.DTOs;
 using DietPlan.Application.Interfaces;
 using DietPlan.Application.Services;
+using DietPlan.Domain.Entities;
 using DietPlan.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 using DietPlan.Infrastructure.Repositorie;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,8 @@ builder.Services.AddScoped<FoodService>();
 builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<MealFoodService>();
 builder.Services.AddScoped<ICalorieCalculationService, CalorieCalculator>();
+builder.Services.AddScoped<DietPlanService>();
+//var userProfile = db.UserProfiles.Find(userProfileId);
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
@@ -180,6 +184,28 @@ app.MapPost("/api/meals/{mealId:Guid}/foods",
 
 //        return Results.Ok(result);
 //    });
+
+app.MapPost("/api/user-profiles/{userProfileId:guid}/diet-plans",
+    (
+        Guid userProfileId,
+        DietPlanDbContext db,
+         [FromServices] DietPlanService service) =>
+    {
+        var userProfile = db.UserProfiles.Find(userProfileId);
+
+        if (userProfile == null)
+        {
+            return Results.NotFound("User Profile not found.");
+        }
+
+        var dietPlan = service.Generate(userProfile);
+
+        db.DietPlans.Add(dietPlan);
+        db.SaveChanges();
+
+        return Results.Ok(dietPlan);
+    })
+    .Accepts<object>("application/json");
 
 
 app.Run();
