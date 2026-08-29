@@ -25,6 +25,12 @@ builder.Services.AddScoped<MealService>();
 builder.Services.AddScoped<MealFoodService>();
 builder.Services.AddScoped<ICalorieCalculationService, CalorieCalculator>();
 builder.Services.AddScoped<DietPlanService>();
+builder.Services.AddScoped<NutritionCalculator>();
+builder.Services.AddScoped<MealNutritionCalculator>();
+builder.Services.AddScoped<MealDistributionCalculator>();
+builder.Services.AddScoped<FoodSelectionService>();
+builder.Services.AddScoped<IFoodRepository, FoodRepository>();
+builder.Services.AddScoped<MealFoodQuantityCalculator>();
 //var userProfile = db.UserProfiles.Find(userProfileId);
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
@@ -206,6 +212,51 @@ app.MapPost("/api/user-profiles/{userProfileId:guid}/diet-plans",
         return Results.Ok(dietPlan);
     })
     .Accepts<object>("application/json");
+
+app.MapGet("/api/foods/{foodId:guid}/nutrition",
+    (
+        Guid foodId,
+        double quantityGrams,
+        DietPlanDbContext db,
+        NutritionCalculator calculator) =>
+    {
+        var food = db.Foods.Find(foodId);
+
+        if (food == null)
+        {
+            return Results.NotFound("Food not found.");
+        }
+
+        if (quantityGrams <= 0)
+        {
+            return Results.BadRequest("Quantity must be greater than 0.");
+        }
+
+        var result = calculator.Calculate(food, quantityGrams);
+
+        return Results.Ok(result);
+    });
+
+app.MapGet("/api/meals/{mealId:guid}/nutrition",
+    (
+        Guid mealId,
+        DietPlanDbContext db,
+        MealNutritionCalculator calculator) =>
+    {
+        var meal = db.Meals
+            .Include(m => m.Foods)
+            .ThenInclude(mf => mf.Food)
+            .FirstOrDefault(m => m.Id == mealId);
+
+        if (meal == null)
+        {
+            return Results.NotFound("Meal not found.");
+        }
+
+        var result = calculator.Calculate(meal);
+
+        return Results.Ok(result);
+    });
 
 
 app.Run();
