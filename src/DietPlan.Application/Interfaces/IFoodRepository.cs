@@ -4,4 +4,5 @@ namespace DietPlan.Application.Interfaces;
 public interface IFoodRepository
 {
     List<Food> GetAll();
+    Food? GetById(Guid id);
 }

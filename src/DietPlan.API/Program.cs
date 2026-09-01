@@ -7,6 +7,7 @@ using DietPlan.Domain.Entities;
 using DietPlan.Infrastructure.Data;
 using DietPlan.Infrastructure.Repositorie;
 using Microsoft.EntityFrameworkCore;
+using DietPlan.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,9 @@ builder.Services.AddScoped<MealDistributionCalculator>();
 builder.Services.AddScoped<FoodSelectionService>();
 builder.Services.AddScoped<IFoodRepository, FoodRepository>();
 builder.Services.AddScoped<MealFoodQuantityCalculator>();
+builder.Services.AddScoped<MealNutritionCalculator>();
+builder.Services.AddScoped<MealMacroOptimizer>();
+builder.Services.AddScoped<IMealRepository, MealRepository>();
 //var userProfile = db.UserProfiles.Find(userProfileId);
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
@@ -256,6 +260,67 @@ app.MapGet("/api/meals/{mealId:guid}/nutrition",
         var result = calculator.Calculate(meal);
 
         return Results.Ok(result);
+    });
+
+
+app.MapGet("/api/diet-plans/{id:guid}",
+    (Guid id, DietPlanDbContext db) =>
+    {
+        var dietPlan = db.DietPlans
+            .Include(dp => dp.Meals)
+            .ThenInclude(m => m.Foods)
+            .ThenInclude(mf => mf.Food)
+            .FirstOrDefault(dp => dp.Id == id);
+
+        if (dietPlan == null)
+        {
+            return Results.NotFound("Diet plan not found.");
+        }
+
+        return Results.Ok(dietPlan);
+    });
+
+app.MapGet("/api/foods",
+    (IFoodRepository foodRepository) =>
+    {
+        var foods = foodRepository.GetAll();
+
+        return Results.Ok(foods);
+    });
+
+
+app.MapGet("/api/foods/{id:guid}",
+    (Guid id, IFoodRepository foodRepository) =>
+    {
+        var food = foodRepository.GetById(id);
+
+        if (food == null)
+        {
+            return Results.NotFound("Food not found.");
+        }
+
+        return Results.Ok(food);
+    });
+
+app.MapGet("/api/meals", (IMealRepository mealRepository) =>
+{
+    var meals = mealRepository.GetAll();
+
+    return Results.Ok(meals);
+
+});
+
+app.MapGet("/api/meals/{id:guid}",
+    (Guid id, IMealRepository mealRepository) =>
+    {
+        var meal = mealRepository.GetById(id);
+
+        if (meal == null)
+        {
+            return Results.NotFound("Meal not found.");
+        }
+
+        return Results.Ok(meal);
     });
 
 

@@ -8,7 +8,7 @@ public class FoodSelectionService
     {
         return mealName switch
         {
-            "Breakfast" => Select(foods,"Oats","Milk","Banana","Eggs"),
+            "Breakfast" => Select(foods,"Oats","Milk","Banana","Egg"),
 
             "Lunch" => Select(foods, "Rice","Chicken Breast"),
 

@@ -18,5 +18,7 @@ public class FoodRepository : IFoodRepository
     {
         return _db.Foods.ToList();
     }
+
+    public Food? GetById(Guid id) { return _db.Foods.Find(id); }
 }
 

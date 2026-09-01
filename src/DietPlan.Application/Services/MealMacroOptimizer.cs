@@ -12,93 +12,130 @@ public class MealMacroOptimizer
         double targetCarbohydrates,
         double targetFat)
     {
-        var quantities = new Dictionary<Guid, double>();
+        var quantities = foods.ToDictionary(
+            food => food.Id,
+            _ => 50.0);
 
         if (foods.Count == 0)
         {
             return quantities;
         }
 
-        // Start with 100g of each food.
-        foreach (var food in foods)
-        {
-            quantities[food.Id] = 100;
-        }
+        var bestScore = CalculateScore(
+            foods,
+            quantities,
+            targetCalories,
+            targetProtein,
+            targetCarbohydrates,
+            targetFat);
 
-        // Gradually adjust quantities.
-        for (int i = 0; i < 100; i++)
+        // Try improving one food at a time.
+        // Quantity is changed in 5g steps.
+        for (int iteration = 0; iteration < 200; iteration++)
         {
-            double calories = 0;
-            double protein = 0;
-            double carbohydrates = 0;
-            double fat = 0;
+            var improved = false;
 
             foreach (var food in foods)
             {
-                var quantity = quantities[food.Id];
-                var multiplier = quantity / 100.0;
+                var currentQuantity = quantities[food.Id];
 
-                calories += food.CaloriesPer100g * multiplier;
-                protein += food.ProteinPer100g * multiplier;
-                carbohydrates += food.CarbohydratePer100g * multiplier;
-                fat += food.FatPer100g * multiplier;
+                var candidates = new[]
+                {
+                    currentQuantity - 5,
+                    currentQuantity + 5
+                };
+
+                foreach (var candidate in candidates)
+                {
+                    if (candidate < 0 || candidate > 500)
+                    {
+                        continue;
+                    }
+
+                    quantities[food.Id] = candidate;
+
+                    var score = CalculateScore(
+                        foods,
+                        quantities,
+                        targetCalories,
+                        targetProtein,
+                        targetCarbohydrates,
+                        targetFat);
+
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        improved = true;
+                        currentQuantity = candidate;
+                    }
+                    else
+                    {
+                        quantities[food.Id] = currentQuantity;
+                    }
+                }
             }
 
-            var calorieDifference = targetCalories - calories;
-            var proteinDifference = targetProtein - protein;
-            var carbohydrateDifference = targetCarbohydrates - carbohydrates;
-            var fatDifference = targetFat - fat;
-
-            // Stop when we are reasonably close.
-            if (Math.Abs(calorieDifference) < 5 &&
-                Math.Abs(proteinDifference) < 2 &&
-                Math.Abs(carbohydrateDifference) < 2 &&
-                Math.Abs(fatDifference) < 2)
+            if (!improved)
             {
                 break;
-            }
-
-            foreach (var food in foods)
-            {
-                var adjustment = 0.0;
-
-                if (food.CaloriesPer100g > 0)
-                {
-                    adjustment += calorieDifference /
-                                  food.CaloriesPer100g * 100;
-                }
-
-                if (food.ProteinPer100g > 0)
-                {
-                    adjustment += proteinDifference /
-                                  food.ProteinPer100g * 100;
-                }
-
-                if (food.CarbohydratePer100g > 0)
-                {
-                    adjustment += carbohydrateDifference /
-                                  food.CarbohydratePer100g * 100;
-                }
-
-                if (food.FatPer100g > 0)
-                {
-                    adjustment += fatDifference /
-                                  food.FatPer100g * 100;
-                }
-
-                // Keep the adjustment small.
-                adjustment *= 0.01;
-
-                quantities[food.Id] = Math.Clamp(
-                    quantities[food.Id] + adjustment,
-                    10,
-                    500);
             }
         }
 
         return quantities.ToDictionary(
             x => x.Key,
             x => Math.Round(x.Value, 1));
+    }
+
+    private double CalculateScore(
+        List<Food> foods,
+        Dictionary<Guid, double> quantities,
+        double targetCalories,
+        double targetProtein,
+        double targetCarbohydrates,
+        double targetFat)
+    {
+        double calories = 0;
+        double protein = 0;
+        double carbohydrates = 0;
+        double fat = 0;
+
+        foreach (var food in foods)
+        {
+            var quantity = quantities[food.Id];
+            var factor = quantity / 100.0;
+
+            calories += food.CaloriesPer100g * factor;
+            protein += food.ProteinPer100g * factor;
+            carbohydrates += food.CarbohydratePer100g * factor;
+            fat += food.FatPer100g * factor;
+        }
+
+        // Convert each difference into a relative error.
+        // This prevents calories from completely dominating the score.
+        var calorieError = targetCalories > 0
+            ? Math.Abs(calories - targetCalories) / targetCalories
+            : 0;
+
+        var proteinError = targetProtein > 0
+            ? Math.Abs(protein - targetProtein) / targetProtein
+            : 0;
+
+        var carbohydrateError = targetCarbohydrates > 0
+            ? Math.Abs(carbohydrates - targetCarbohydrates)
+              / targetCarbohydrates
+            : 0;
+
+        var fatError = targetFat > 0
+            ? Math.Abs(fat - targetFat) / targetFat
+            : 0;
+
+        // Weight protein slightly more because it is especially
+        // important for the muscle-gain target in our current test.
+        return
+            (calorieError * 1.0) +
+            (proteinError * 1.5) +
+            (carbohydrateError * 1.0) +
+            (fatError * 1.0);
     }
 }
 
